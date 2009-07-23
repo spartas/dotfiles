@@ -1,0 +1,5 @@
+Tim Wright
+
+Included:
+	vimrc 	: My personalized .vimrc -- References private data in ~/.vim/sources (commented), which is not included.
+
