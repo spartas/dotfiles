@@ -1,5 +1,6 @@
 Tim Wright
 
 Included:
-	vimrc 	: My personalized .vimrc -- References private data in ~/.vim/sources (commented), which is not included.
+	vimrc 	: My personalized .vimrc 		-- References private data in ~/.vim/sources (commented); not included.
+	gvimrc 	: My personalized .gvimrc 	-- A few extras for GUI vim
 
