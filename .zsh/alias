@@ -1,0 +1,39 @@
+# Environment variables 
+
+export EDITOR="vim"
+export VISUAL="vim"
+
+# Aliases
+alias path='echo -e ${PATH//:/\\n}' # Pretty print
+alias ls='ls --color=auto'
+alias tree='tree -C'
+alias realias="vim $HOME/.zsh/alias; source $HOME/.zshrc"
+alias ll='ls -l'
+alias l='ll'
+alias lh='ls -lt $@ | head -10'
+alias grep='grep --color'
+
+# Shamelessly stolen from mattikus
+alias cal='cal | sed "s/.*/ & /;s/ \($(date +%e)\) / $(echo -e "\033[01;31m")\1$(echo -e "\033[00m") /"'
+
+alias digg='dig +short'
+alias svim='sudo gvim'
+alias igrep='grep -i'
+
+# Very useful for printing directory trees (with color)
+alias lsd='tree -d -L 1'
+
+alias stopwatch="time > /dev/null"
+alias info="info --vi-keys"
+alias gvd='gvimdiff'
+
+# Stolen from someone's bashrc
+alias findy="find . -xdev -name"
+alias sc="grep -v '^[ ]*#\|^[	]*$' " # Remove spaces and comments from files
+
+# Prevent accidentally pingspamming servers
+alias ping="ping -c 25"
+
+
+
+# vim:ft=zsh

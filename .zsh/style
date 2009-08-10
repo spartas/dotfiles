@@ -1,0 +1,29 @@
+# ZSH Style Config
+
+# Completion Stylers
+
+zmodload zsh/complist
+zstyle ':completion:*' completer _complete _list _match _approximate
+zstyle ':completion:*:match:*' original only
+zstyle -e ':completion:*:approximate:*' max-errors 'reply=( $(( ($#PREFIX + $#SUFFIX) / 3 )) )'
+zstyle ':completion:*descriptions' format "- %d -"
+zstyle ':completion:*corrections' format "- %d - (errors %e})"
+zstyle ':completion:*:default' list-prompt '%S%M matches%s'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:manuals.(^I)' insert-sections true
+zstyle ':completion:*' menu select
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' accept-exact yes
+zstyle ':completion:*' expand yes
+zstyle ':completion:*' use-cache yes
+zstyle ':completion:*' use-perl yes
+
+# Tab completion for killing PIDs
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*'   force-list always
+
+
+# cd not select parent dir.
+zstyle ':completion:*:cd:*' ignore-parents parent pwd
+
+# vim: ft=zsh

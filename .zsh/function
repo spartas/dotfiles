@@ -1,0 +1,14 @@
+function wj() {
+	wget "$1" -O- | tar xjf -
+}
+
+function wz() {
+	wget "$1" -O- | tar xzf -
+}
+
+function confmake() {
+	./configure "$@" && make -j4
+}
+
+# vim:ft=zsh
+
