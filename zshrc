@@ -2,7 +2,8 @@ autoload -U compinit promptinit
 compinit
 promptinit
 prompt clint 			# Clint theme
-cat /etc/remind  	# Reminders
+
+[[ -f ${HOME}/.remind ]] && cat ${HOME}/.remind
 
 ZHOME="${HOME}/.zsh"
 source "${ZHOME}/alias"
