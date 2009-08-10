@@ -34,6 +34,7 @@ set pastetoggle=<S-F11>
 let paste_mode = 0 " 0 = normal, 1 = paste
 
 set visualbell
+set cul
 
 " ===
 " PDV
@@ -107,27 +108,9 @@ set ruler
 " ============================
 nnoremap Q gq
 
-" =========================
-" Allow tab code completion
-" =========================
-" http://www.vim.org/tips/tip.php?tip_id=102
-function! CleverTab(direction)
-	let col = col('.') - 1
-
-	if pumvisible() && 'backward' == a:direction 
-		return "\<C-P>"
-	elseif pumvisible() " If we're already showing the list of completions
-		return "\<C-N>"
-	elseif !col || getline('.')[col - 1] !~ '\k' " Insert a regular tab normally
-		return "\<Tab>"
-	elseif exists('&omnifunc') && &omnifunc != ''	" Show Omni-Completions
-		return "\<C-X>\<C-O>"
-	elseif "backward" == a:direction 							" Allow backward searching
-		return "\<C-P>"
-	else 																					"" By default auto-complete
-		return "\<C-N>"
-	endif
-endfunction
+" Remap ctrl-space to omnicompletion
+" Thx mattikus
+inoremap <C-space> <C-x><C-o>
 
 map <F10> :new<CR>:read !svn diff<CR>:set syntax=diff buftype=nofile<CR>gg
 
@@ -160,15 +143,19 @@ set t_Co=256
 " =======================
 let g:explHideFiles='^\.svn,\.$'
 
+" No help, plz
+nmap <F1> <Esc>
+	
 
 map <F10> :new<CR>:read !svn diff<CR>:set syntax=diff buftype=nofile<CR>gg
 
 set notr
 
-" Set working directory to the current file
-" http://vim.wikia.com/wiki/VimTip64
-autocmd BufEnter * lcd %:p:h
 
+if version > 700
+	set autochdir "Magic
+
+endif
 
 "let g:SuperTabDefaultCompletionType = "<C-X><C-O>"
 

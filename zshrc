@@ -4,22 +4,23 @@ promptinit
 prompt clint 			# Clint theme
 cat /etc/remind  	# Reminders
 
+ZHOME="${HOME}/.zsh"
+source "${ZHOME}/alias"
+source "${ZHOME}/style"
+source "${ZHOME}/function"
+
+# Local zshrc
+[[ -f "${HOME}/.zshrc.local" ]] && source "${HOME}/.zshrc.local"
+
 # Aliases
 
 alias path='echo -e ${PATH//:/\\n}'
 
 #o_O pretty
-alias ls='ls --color'
-alias tree='tree -C'
-
-## Need to comment more on these
-alias realias="vim $HOME/.zshrc; source $HOME/.zshrc"
-
 alias gvim='gvim -p'
 alias vim='vim -p'
 
-alias nsvim='gvim -S ~/.vim/sources/*.vim'
-alias ns='nsvim'
+
 
 alias xo="xdg-open"
 
@@ -76,9 +77,8 @@ alias gb="cd $OLDPWD" # I should use this one more
 
 # SVN 
 alias svnlast='svn log --limit 1'
-# Before ack
+# All files not in SVN
 alias nosvn="svn st | grep \"^[?]\""
-
 
 #Exports
 export EDITOR='vim'
@@ -110,7 +110,7 @@ function van
 # Wrapper for "svn diff"
 function svndiff()
 {
-svn diff $@ | gvim - "+%foldo!" "+set bt=nofile"
+	svn diff $@ | gvim - "+%foldo!" "+set bt=nofile nomod"
 }
 
 function tell()
@@ -208,6 +208,8 @@ function treediff() {
 	diff -X ~/svn_exclusion.txt -r "$@"
 }
 
-# Key Maps
-bindkey  history-incremental-search-backward
+## Key Maps 
+
+# Backward history search
+bindkey ^B history-incremental-search-backward
 
