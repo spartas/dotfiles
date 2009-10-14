@@ -73,8 +73,9 @@ alias VCfind="find . -type f -iname \"$1\" | grep -v \"\.svn\""
 # Prevent accidentally pingspamming servers
 alias ping="ping -c 25"
 
-# Go back
-alias gb="cd $OLDPWD" # I should use this one more
+# Go back (Do not use; use "cd -" instead)
+#alias gb="cd $OLDPWD"
+#
 
 # SVN 
 alias svnlast='svn log --limit 1'

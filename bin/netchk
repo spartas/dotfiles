@@ -1,0 +1,103 @@
+#! /bin/bash
+
+# NetChk
+# (c) 2009 Tim Wright
+# 2009.10.13 T.Wright - 0.75 Added -l (Legend), -m (Min tries option)
+# 2009.10.13 T.Wright - 0.9 Added -p (print Ping successes); changed ping failures to "!"
+# 2009.10.13 T.Wright - 1.0 /bin/ping doesn't like arguments without spaces between them
+#
+
+# Set some defaults
+COUNT=-1
+IPHOST="4.2.2.2"
+HOST="google.com"
+MINCOUNT=0
+SHOWPING=0
+
+echo -e "NetChk 1.0 (c) 2009 T.Wright"
+
+# Valid arguments are:
+# 	-c [max_count]: Program will quit after this number of attempts (or a successful check was achieved, whichever
+# 		occurs first).
+#
+# 	-i [ip_host]: IP host to check (default: 4.2.2.2)
+# 	-h [host]: Name host to check (default: google.com)
+# 	-m: Treat -c as a minimum threshold as well
+# 	-l: Print legend
+# 	-p: Print ping successes
+
+# Process arguments
+while getopts "c:h:i:lmp" flag
+do
+	if [[ "h" == "$flag" ]]
+	then
+		HOST="$OPTARG"
+	elif [[ "i" == "$flag" ]]
+	then
+		IPHOST="$OPTARG"
+	elif [[ "c" == "$flag" ]]
+	then
+		COUNT="$OPTARG"
+	elif [[ "m" == "$flag" ]]
+	then
+		MINCOUNT=1
+	elif [[ "l" == "$flag" ]]
+	then
+		echo "Legend:"
+		echo -e "\t! = Ping IPHOST failed"
+		echo -e "\t? = DNS lookup HOST failed"
+		echo -e "\t+ = Ping+DNS succeeded."
+		echo -e "\n\t. = Ping IPHOST succeeded (if -p is specified)"
+	elif [[ "p" == "$flag" ]]
+	then
+		SHOWPING=1
+	fi
+done
+
+shift $((OPTIND-1))
+
+CURR_COUNT=0
+RETVAL=0
+while true;
+do
+	
+	# Test for breaking out of the loop
+	if [[ $COUNT -gt 0 && $CURR_COUNT -ge $COUNT ]]
+	then
+		exit $RETVAL
+	fi
+
+	`/bin/ping -q -c1 -w1 "$IPHOST" > /dev/null 2>&1`
+
+	if [ $? -eq 1 ]
+	then
+		echo -en "!"
+		RETVAL=1
+	else
+
+		if [ $SHOWPING -eq 1 ]
+		then
+			echo -en "."
+		fi
+
+		DNSLK=`/usr/bin/dig +short +tries=1 +retry=0 +time=1 $HOST`
+		if [ ! -n "$DNSLK" ]
+		then
+			echo -en "?"
+			RETVAL=2
+		else
+			echo -en "+"
+			RETVAL=0
+
+			if [ $MINCOUNT -eq 0 ]
+			then
+				echo -e "\nNet check success."
+				break;
+			fi
+		fi
+	fi
+		
+	CURR_COUNT=$((CURR_COUNT + 1))
+
+done;
+

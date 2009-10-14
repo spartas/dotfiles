@@ -28,13 +28,14 @@ nmap ,v :e $MYVIMRC
 " =====================
 " Dis/Enable Paste Mode
 " =====================
-map <S-F11> :call Paste_on_off()<CR>
+"map <S-F11> :call Paste_on_off()<CR>
 set pastetoggle=<S-F11>
 
 let paste_mode = 0 " 0 = normal, 1 = paste
 
 set visualbell
 set cul
+set modeline
 
 " ===
 " PDV
@@ -50,16 +51,16 @@ so ~/.vim/plugin/supertab.vim
 " ===========================
 " The paste switcher function
 " ===========================
-func! Paste_on_off()
-  if g:paste_mode == 0
-    set paste
-    let g:paste_mode = 1
-  else
-    set nopaste
-    let g:paste_mode = 0
-  endif
-  return
-endfunc
+"func! Paste_on_off()
+"  if g:paste_mode == 0
+"    set paste
+"    let g:paste_mode = 1
+"  else
+"    set nopaste
+"    let g:paste_mode = 0
+"  endif
+"  return
+"endfunc
 
 
 " =======================================
@@ -72,13 +73,13 @@ set bg=dark
 " Smart options for those who program
 " ====================================
 set smarttab
-set smartindent
 set noexpandtab
 set tabstop=2
 set shiftwidth=2
 set autoindent
+set smartindent
 set cindent
-filetype plugin indent on
+"filetype plugin indent on
 set fmr={,}
 set linespace=1 " Display additional space between lines for easier readability
 set fo=tcrqn
@@ -163,7 +164,8 @@ endif
 let html_use_css = 1
 let use_xhtml = 1
 
-set guioptions-=t
+" Had a bad experience with the "Print" toolbar button
+set guioptions-=tT
 
 " Highlighted groups
 :hi Commented_CSS ctermbg=darkgreen guibg=darkgreen
@@ -176,4 +178,12 @@ set guioptions-=t
 " Pretty print SQL
 map ,sql <ESC>:s/\(from\<Bar>where\<Bar>select\<Bar>left join\)/<C-V><CR>\U\1/g
 vmap ,sql <ESC>:'<,'>s/\(from\<Bar>where\<Bar>select\<Bar>left join\)/\U\1/g
+
+" Nifty abbreviations
+iab AlP ABCDEFGHIJKLMNOPQRSTUVWXYZ
+iab MoN January February March April May June July August September October November December
+iab MoO Jan Feb Mar Apr May Jun Jul Aug Sep Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+iab NuM 12345678901234567890123456789012345678901234567890123456789012345678901234567890 
+iab RuL -----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+----1----+----2
+
 

@@ -1,0 +1,81 @@
+#! /bin/bash
+
+# when [-w|-d day] [-u user] [file]
+
+# Valid arguments are -d, -u for specifying to display data from a previous date and/or 
+# user respectively. 
+#
+# NOTE: If no entries are found in the current wtmp file, the previous one is checked as well.  
+# No further checking is done on older wtmp files.
+
+# As an example: 
+# 	when -u reboot 				: display reboots
+# 	when -d 1 						: display login data from yesterday (1 day ago)
+# 	when -w 							: display login data from the past week
+# 	when /var/log/wtmp.1 	: display data from the previous lastlog file.  NOTE: File should be in wtmp format.
+
+# The defaults are set here.  +/- arguments to -d are ignored, as future dates do not make sense.
+DAY=`date +%b\ %_d`
+DAYL=`date +%-d`
+ME=`whoami`
+
+
+# Process arguments
+while getopts "wu:d:h" flag
+do
+	if [[ "u" == "$flag" ]]
+	then
+		ME="$OPTARG"
+	elif [[ "h" == "$flag" ]]
+	then
+		echo "Usage: when [-u user] [-d num] [-w] [-h] file"
+		echo -e "\t -u \t\t"
+		exit 0
+	elif [[ "d" == "$flag" ]]
+	then
+		# Ensure we ignore dates in the future, as those don't make sense
+		if [[ "+" == ${OPTARG:0:1} ]]
+		then
+			OPTARG=${OPTARG:1}
+		fi
+
+		DAY=`date +%b\ %_d -d "-$OPTARG days"`
+		DAYL=`date +%-d -d "-$OPTARG days"`
+		DAYOUT=`date +%a\ %b\ %_d -d "-$OPTARG days"`
+	elif [[ "w" == "$flag" ]]
+	then
+		DAYINC=0
+		DAYW=`date +%u`
+		while [ $DAYW -ge 1 ]
+		do
+			when -d $DAYINC -u "$ME"
+			DAYW=$((DAYW - 1)) # Decrement
+			DAYINC=$((DAYINC + 1 ))
+		done
+		exit 0
+	fi
+done
+
+shift $((OPTIND-1))
+
+FIELD=$(( 32 - ${#DAYL} ))
+
+if [[ "" != "$1" ]]
+then
+	FILE="$1"
+
+	M=`last -f "$FILE" "$ME" | grep " $DAY " | grep -v pts | egrep "^$ME"`
+
+else
+	M=`last "$ME" | grep " $DAY " | grep -v pts | egrep "^$ME"`
+
+	if [[ "" == $M && -f /var/log/wtmp.1 ]]
+	then
+		M=`last -f /var/log/wtmp.1 "$ME" | grep " $DAY " | grep -v pts | egrep "^$ME"` 
+	fi
+fi
+
+echo $DAYOUT
+echo -e "$M" | cut -d " " -f 1,$FIELD,$((FIELD+1)),$((FIELD+2)),$((FIELD+3)),$((FIELD+4)),$((FIELD+5))
+
+exit 0

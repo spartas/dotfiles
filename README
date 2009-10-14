@@ -1,7 +1,15 @@
 Tim Wright
+	2009.10.14 T.Wright - Added bin subdirectory and some helpful scripts; updated *rc files
 
-Included:
-	vimrc 	: .vimrc 		-- References private data in ~/.vim/sources (commented); not included.
-	gvimrc 	: .gvimrc 	-- A few extras for GUI vim
-	zshrc 	: .zshrc  	-- ZSHrc, customized.  May not work out-of-the-box.
+
+Included :
+	vimrc 		: .vimrc 		-- References private data in ~/.vim/sources (commented); not included.
+	gvimrc 		: .gvimrc 	-- A few extras for GUI vim
+	zshrc 		: .zshrc  	-- ZSHrc, customized.  May not work out-of-the-box.
+
+	bin/ 			: A collection of utilities I've developed
+		netchk 	: Bash script to check internet connectivity
+		pa 			: A more informative ps
+		when 		: Nice wrapper around last
+
 

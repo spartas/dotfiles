@@ -1,0 +1,26 @@
+#! /bin/bash
+
+# 2009.01.29 T.Wright - file created
+# Usage:
+#
+# 	pa 
+# 	pa [program name]
+#
+
+# Print the header
+ps aux | head -1 
+
+if [[ $# -gt 0 ]]
+then
+	for PROG in $@
+	do
+		ps aux --no-heading | grep "$PROG" | grep -v "pa\|grep"
+	done
+else
+	ps aux --no-heading
+fi
+
+# Print the footer
+ps aux | head -1
+
+exit 0

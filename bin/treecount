@@ -1,0 +1,15 @@
+#! /bin/bash
+
+for arg in $@
+do
+
+	COUNT=0; 
+	for i in `grep -cri $arg *| grep -v ".svn" | cut -f 2 -d ":"`; 
+	do 
+		COUNT=$(($COUNT + $i)); 
+		done; 
+	echo -e "$arg: $COUNT"
+done
+
+exit 0
+
