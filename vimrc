@@ -166,6 +166,7 @@ let use_xhtml = 1
 
 " Had a bad experience with the "Print" toolbar button
 set guioptions-=tT
+set guioptions+=a
 
 " Highlighted groups
 :hi Commented_CSS ctermbg=darkgreen guibg=darkgreen

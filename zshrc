@@ -66,6 +66,13 @@ alias gvd="gvimdiff"
 
 # Stolen from someone's bashrc
 alias findy="find . -xdev -name"
+
+# More "find" helpers
+alias findex="find . -xdev -iregex"
+alias ffindex="find . -xdev -type f -iregex"
+
+alias metafind="findex \".*\._?DS_Store?\""
+
 alias sc="grep -v '^[ ]*#\|^[	]*$' " # Remove spaces and comments from files
 
 alias VCfind="find . -type f -iname \"$1\" | grep -v \"\.svn\""

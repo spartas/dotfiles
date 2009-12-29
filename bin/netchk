@@ -64,6 +64,7 @@ do
 	# Test for breaking out of the loop
 	if [[ $COUNT -gt 0 && $CURR_COUNT -ge $COUNT ]]
 	then
+		echo -e "\n"
 		exit $RETVAL
 	fi
 

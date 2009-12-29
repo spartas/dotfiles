@@ -4,7 +4,7 @@
 # Usage:
 #
 # 	pa 
-# 	pa [program name]
+# 	pa {process(es)?}
 #
 
 # Print the header

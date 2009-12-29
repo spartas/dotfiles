@@ -1,0 +1,39 @@
+#! /bin/bash
+
+# syn -k
+# syn [-p port] host
+#
+# syn {host} 	: Opens an ssh connection, forwards the PORT, and connects the 
+# 	synergy client to the PORT on the local machine. The synergy server should
+#		be running on the same port of the remote machine for this to be at all
+# 	useful.
+#
+# syn -k 			: Kills the synergy client as well as open ssh connections
+
+
+PORT=4144
+
+while getopts "kp:" flag
+do
+	if [[ "k" == "$flag" ]]
+	then
+		killall synergyc ssh
+		exit 0
+	elif [[ "p" == "$flag" ]]
+	then
+		PORT=$OPTARG
+	fi
+done
+
+shift $((OPTIND-1))
+
+if [[ $# -lt 1 ]]
+then
+	echo "Synergy host is required."
+	exit 1
+fi
+
+ssh -N -f -L "$PORT":localhost:"$PORT" "$1"
+synergyc 127.0.0.1:"$PORT"
+
+exit 0
