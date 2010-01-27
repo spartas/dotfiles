@@ -23,9 +23,18 @@ alias vim='vim -p'
 
 
 
-alias xo="xdg-open"
+if [[ `uname` == "Darwin" ]] # Properly alias "xo" for Darwin-based machines (including OS X)
+then
+	alias xo="open"
+else
+	alias xo="xdg-open"
+fi
 
-alias ack='ack-grep'
+# Properly fix up ack on Ubuntu-based machines (ack is ack, not ack-grep)
+if [[ -f "/etc/issue" && `cat /etc/issue | cut -d " " -f1` == "Ubuntu" ]]
+then
+	alias ack='ack-grep'
+fi
 
 # Shamelessly stolen from mattikus
 alias cal='cal | sed "s/.*/ & /;s/ \($(date +%e)\) / $(echo -e "\033[01;31m")\1$(echo -e "\033[00m") /"'
@@ -80,9 +89,8 @@ alias VCfind="find . -type f -iname \"$1\" | grep -v \"\.svn\""
 # Prevent accidentally pingspamming servers
 alias ping="ping -c 25"
 
-# Go back (Do not use; use "cd -" instead)
-#alias gb="cd $OLDPWD"
-#
+# 2010.01.27 T.Wright - Removed reference to gb; if you really want to use something a particular way, 
+# then remove the ability to run it using any other method. Just commenting it out doesn't count.
 
 # SVN 
 alias svnlast='svn log --limit 1'
