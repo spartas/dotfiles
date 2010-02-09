@@ -12,7 +12,6 @@
 " 	See line 46.
 "=========================================================================="
 
-
 " ============
 " Nice buffers
 " ============
@@ -36,6 +35,8 @@ let paste_mode = 0 " 0 = normal, 1 = paste
 set visualbell
 set cul
 set modeline
+
+set nocompatible
 
 " ===
 " PDV
@@ -164,10 +165,6 @@ endif
 let html_use_css = 1
 let use_xhtml = 1
 
-" Had a bad experience with the "Print" toolbar button
-set guioptions-=tT
-set guioptions+=a
-
 " Highlighted groups
 :hi Commented_CSS ctermbg=darkgreen guibg=darkgreen
 
@@ -186,5 +183,4 @@ iab MoN January February March April May June July August September October Nove
 iab MoO Jan Feb Mar Apr May Jun Jul Aug Sep Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
 iab NuM 12345678901234567890123456789012345678901234567890123456789012345678901234567890 
 iab RuL -----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+----1----+----2
-
 
