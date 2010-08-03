@@ -1,7 +1,11 @@
-autoload -U compinit promptinit
+autoload -U compinit promptinit edit-command-line
 compinit
 promptinit
 prompt clint 			# Clint theme
+
+zle -N edit-command-line
+
+bindkey -M vicmd v edit-command-line
 
 [[ -f ${HOME}/.remind ]] && cat ${HOME}/.remind
 
@@ -51,6 +55,9 @@ alias grep='grep --color=auto'
 alias cgrep='grep --color=always'
 alias igrep='grep -i'
 alias lsd="tree -d -L 1"
+
+
+alias netchk='netchk -plm'
 
 
 
@@ -130,6 +137,10 @@ function svndiff()
 	svn diff $@ | gvim - "+%foldo!" "+set bt=nofile nomod"
 }
 
+function svnurl() {
+	svn info | grep URL | cut -d " " -f 2
+}
+
 function tell()
 {
 	tail -20 $@ | head
@@ -148,7 +159,14 @@ local old_revision=`svnrev $@`
 local first_update=$((${old_revision} + 1))
 svn up -q $@
 if [ $(svnrev $@) -gt ${old_revision} ]; then
-svn log -v -rHEAD:${first_update} $@
+
+	if [ $# -eq 0 ]
+	then
+		svn log -v -rHEAD:${first_update} ^/ 
+	else 
+		svn log -v -rHEAD:${first_update} $@
+	fi
+
 else
 echo "No changes."
 fi

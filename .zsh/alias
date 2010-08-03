@@ -34,6 +34,7 @@ alias sc="grep -v '^[ ]*#\|^[	]*$' " # Remove spaces and comments from files
 # Prevent accidentally pingspamming servers
 alias ping="ping -c 25"
 
-
+alias ]='pushd .'
+alias "_"='popd'
 
 # vim:ft=zsh
