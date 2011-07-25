@@ -1,0 +1,23 @@
+{
+    "timefilter" :
+        {
+            "Time Group 1" : [
+                "June 15, 2008 at 7:36 pm",
+                "November 6, 2008 at 8:20 am",
+                "February 28, 2009 at 8:42 pm"
+            ],
+
+            "The next time Group" : [
+                "December 22, 2007 at 9:38 pm",
+                "March 11, 2008 at 4:53 pm",
+                "July 30, 2008 at 10:06 am"
+            ]
+        },
+    "albums" :
+    [
+        "album name1",
+        "Name of album 2",
+        "Profile Pictures"
+    ]
+
+}
