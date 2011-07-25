@@ -359,9 +359,6 @@ if __name__ == "__main__":
 	if os.path.isfile(file_path):
 		file_path = os.path.dirname(file_path)
 
-	print file_path
-	sys.exit(2)
-	
 	str_outfile_dt = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 	outfile_path = os.path.join(os.path.dirname(file_path), os.path.basename(file_path) + "-" + str_outfile_dt)
 	os.mkdir( outfile_path )
