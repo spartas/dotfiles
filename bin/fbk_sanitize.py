@@ -44,14 +44,18 @@
 # 		* Restructured the script with functions to functional-ize some of the repeated processing. This is an area
 # 			that will get improved in the future as well.
 #
+# 	Version 1.6 [September 5th, 2011]
+# 		* Facebook changed the "Everyone" privacy value to "Public". "E" may still be used to specify "[E]veryone", 
+# 			but it's been updated to use "Public". "P" has been added to support "[P]ublic as well.
 #
-#
-#
+# 		* Facebook appears to be using the hCard microformat in class names, so I've had to update the script to use
+# 			these as well.
 #
 # 		NOTE: BeautifulSoup and argparse may or may not be included with your Python distribution. This program 
 # 					relies on both, and will not run without them.
 
 from BeautifulSoup import BeautifulSoup
+from zipfile import ZipFile
 from datetime import datetime
 import sys
 import re
@@ -98,7 +102,7 @@ def write_outfile( contents, outfilepath, filename ):
 	outfile.write( contents )
 	outfile.close()
 
-def process_wall( args, infilepath, outfilepath, time_filter ):
+def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map ):
 
 	# Add the timestamp-based wall filter options if specified (using -t or --timefile-filter)
 	if(args.timefile_filter):
@@ -133,13 +137,13 @@ def process_wall( args, infilepath, outfilepath, time_filter ):
 		icon_src_regex = re.compile('^http://www.facebook.com/images/icons/')
 
 		# Root facebook.com icon image sources to the local filesystem (stop giving facebook.com traffic to analyze)
-		for icon_image in soup.findAll('img', attrs={'class': 'icon'}, src=icon_src_regex):
+		for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['icon']}, src=icon_src_regex):
 			icon_image['src'] = re.sub(r'http://www.facebook.com/', '../', icon_image['src']); 
 			
 
 		# A future version will check that the corresponding files exist, and will download them if not
 		for logo_img in icon_map:
-			for icon_image in soup.findAll('img', attrs={'class': 'icon'}, src=logo_img):
+			for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['icon']}, src=logo_img):
 				icon_image['src'] = re.sub(re.compile(logo_img), '../images/icons/' + icon_map[logo_img], icon_image['src'])
 
 
@@ -154,30 +158,30 @@ def process_wall( args, infilepath, outfilepath, time_filter ):
 
 
 	# Extract all 'class="profile"' tags
-	class_profile = soup.findAll(attrs={'class':'profile'})
+	class_profile = soup.findAll(attrs={'class': attr_classname_map['profile']})
 
 	# Remove all posts by anyone who is not the profile author
 	for spantag in class_profile:
-		if spantag.string != profile_name:
-			spantag.parent.extract()
+		if spantag.string != profile_name and None == spantag.findParent(attrs={'class' : attr_classname_map['comments']}):
+			spantag.findParent(attrs={'class':attr_classname_map['feedentry']}).extract()
 
 	# Remove all comments
-	comments = soup.findAll(attrs={'class':'comments'})
+	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
 	[comment.extract() for comment in comments]
 
 
 	# Remove the explicit time entries, as specified above
 	for timestr in time_filter:
-		time_entry = soup.find(attrs={'class':'timerow'}, text=timestr)
+		time_entry = soup.find(attrs={'class': attr_classname_map['timerow']}, text=timestr)
 		if( None == time_entry ):
 			print "No entry found for time: %s" % (timestr)
 		else:
-			time_entry.findParent(attrs={'class':'feedentry'}).extract()
+			time_entry.findParent(attrs={'class': attr_classname_map['feedentry']}).extract()
 
 
 	# Remove "walllink" class posts (TEMPORARY, until a better solution can be found without exposing private data)
-	wall_links = soup.findAll(attrs={'class':'walllink'})
-	[wall_link.findParent(attrs={'class':'feedentry'}).extract() for wall_link in wall_links]
+	wall_links = soup.findAll(attrs={'class': attr_classname_map['walllink']})
+	[wall_link.findParent(attrs={'class': attr_classname_map['feedentry']}).extract() for wall_link in wall_links]
 
 
 	### REMOVE PRIVATE POSTS ###
@@ -187,30 +191,34 @@ def process_wall( args, infilepath, outfilepath, time_filter ):
 		'F' 	: 'Friends Only',
 		'M' 	: 'Only Me',
 		'o' 	: 'Friends of Friends',
-		'E' 	: 'Everyone',
+		'E' 	: 'Public',
+		'P' 	: 'Public',
 	}
 
 	privacy_exceptions = []
 	for privacy_specifier, regex in privacy_opt_regex_map.iteritems():
 		if privacy_specifier in args.privacy:
-			privacy_exceptions.extend( soup.findAll('img', attrs={'class':'privacy'}, title=re.compile(regex)) )
 
-	[privacy_exception.findParent(attrs={'class':'feedentry'}).extract() for privacy_exception in privacy_exceptions]
+			img_privacy = soup.findAll('img', attrs={'class': attr_classname_map['privacy']}, title=re.compile(regex))
+			privacy_exceptions.extend( img_privacy )
+
+
+	[privacy_exception.findParent(attrs={'class': attr_classname_map['feedentry']}).extract() for privacy_exception in privacy_exceptions]
 
 
 	# Remove the privacy icons
-	privacy_indicators = soup.findAll('img', attrs={'class':'privacy'})
+	privacy_indicators = soup.findAll('img', attrs={'class': attr_classname_map['privacy']})
 	[privacy_indicator.extract() for privacy_indicator in privacy_indicators]
 
 
 	# Strip out the download notice
-	soup.find(attrs={'class':'downloadnotice'}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
 
 	# Write out the filtered wall page
 	write_outfile(soup.prettify(), outfilepath, 'wall.html')
 
 
-def process_photos( args, infilepath, outfilepath, album_filter ):
+def process_photos( args, infilepath, outfilepath, album_filter, attr_classname_map ):
 
 	infile = os.path.join(infilepath,'photos.html')
 
@@ -233,33 +241,40 @@ def process_photos( args, infilepath, outfilepath, album_filter ):
 	# Remove the tab links
 	extract_tab_links(soup, args.pages, args.suppress_links)
 
+	# ADDITION: 2011-09-05
+	# This is necessary because BS can choke on photo album comments. So we'll remove them individually first and
+	# then do the default action of removing the whole comment block as before.
+	comments = soup.findAll(attrs={'class': 'comment hentry'})
+	[comment.extract() for comment in comments]
+	# END ADDITION
+
 	# Remove all comments
-	comments = soup.findAll(attrs={'class':'comments'})
+	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
 	[comment.extract() for comment in comments]
 
 
  	# Remove explicit albums, as specified in album_filter
 	for albumstr in album_filter:
-		soup.find('a', text=albumstr).findParent('div', attrs={'class':'album'}).extract()
+		soup.find('a', text=albumstr).findParent('div', attrs={'class': attr_classname_map['album']}).extract()
 
 	# Go over the remaining album pages and handle them as well
-	for album_struct in soup.findAll('div', attrs={'class':'album'}):
+	for album_struct in soup.findAll('div', attrs={'class': attr_classname_map['album']}):
 		album_filename = urllib.url2pathname(album_struct.find('a')['href'])
 		
 		f = open(os.path.join(infilepath, album_filename), 'r')
 		album_soup = BeautifulSoup( f.read() )
 		f.close()
 
-		process_album( album_soup, args, outfilepath, album_filename )
+		process_album( album_soup, args, outfilepath, album_filename, attr_classname_map )
 
 	# Strip out the download notice
-	soup.find(attrs={'class':'downloadnotice'}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
 
 	# Write out the filtered photos page
 	write_outfile(soup.prettify(), outfilepath, 'photos.html')
 
 
-def process_album( soup, args, outfilepath, album_filename ):
+def process_album( soup, args, outfilepath, album_filename, attr_classname_map ):
 	# Remove the tab links from album pages
 	extract_tab_links(soup, args.pages, args.suppress_links)
 
@@ -273,11 +288,11 @@ def process_album( soup, args, outfilepath, album_filename ):
 		del(fbk_link['href'])
 
 	# Remove all comments from album pages
-	comments = soup.findAll(attrs={'class':'comments'})
+	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
 	[comment.extract() for comment in comments]
 
 	# Strip out the download notice
-	soup.find(attrs={'class':'downloadnotice'}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
 
 	write_outfile( soup.prettify(), outfilepath, album_filename )
 
@@ -366,10 +381,29 @@ if __name__ == "__main__":
 	# Copy 'style.css' to the target directory
 	shutil.copy( os.path.join(file_path, 'style.css'), outfile_path)
 
+	
+	attr_classname_map = {
+		'profile' : {
+			'album' 					: 'album',
+			'comments' 				: 'comments hfeed',
+			'downloadnotice' 	: 'downloadnotice',
+			'feedentry' 			: 'feedentry hentry',
+			'icon' 						: 'icon',
+			'privacy' 				: 'privacy',
+			'profile' 				: 'profile fn',
+			'timerow' 				: 'timerow',
+			'walllink' 				: 'walllink',
+		},
+		'photos' : {
+			'album' 					: 'album',
+			'comments' 				: 'comment hentry',
+			'downloadnotice' 	: 'downloadnotice',
+		},
+	}
 
 	if "wall" in pages:
-		process_wall(args, file_path, outfile_path, obj_config['timefilter'])
+		process_wall(args, file_path, outfile_path, obj_config['timefilter'], attr_classname_map['profile'])
 	if "photos" in pages:
-		process_photos(args, file_path, outfile_path, obj_config['albums'])
+		process_photos(args, file_path, outfile_path, obj_config['albums'], attr_classname_map['profile'])
 
 	sys.exit(0)
