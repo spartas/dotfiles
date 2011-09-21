@@ -10,9 +10,6 @@
 # 		* Pulled out the hard-coded timestamp filter list into a user-specified external file.
 # 		* Added (-P) privacy specifiers
 # 		
-# 		NOTE: BeautifulSoup and argparse may or may not be included with your Python distribution. This program 
-# 					relies on both, and will not run without them.
-#
 # 	Version: 1.5 [July 3rd, 2011]
 # 		* Factored out the logic for specifying privacy options, such that the user can choose which 
 # 			privacy-level posts will show in the exported file. The default privacy level operates as before. 
@@ -47,14 +44,30 @@
 # 	Version 1.6 [September 5th, 2011]
 # 		* Facebook changed the "Everyone" privacy value to "Public". "E" may still be used to specify "[E]veryone", 
 # 			but it's been updated to use "Public". "P" has been added to support "[P]ublic as well.
-#
 # 		* Facebook appears to be using the hCard microformat in class names, so I've had to update the script to use
 # 			these as well.
+#
+# 	Version 2.0 [September 18th, 2011]
+# 		* Major changes to the infile. Now, the infile argument takes the raw facebook zip export file, rather than 
+# 			requiring the user to extract it. Backwards compatibility is not provided. In previous versions, this 
+# 			script operated on the "wall.html" and "html" infile arguments, in 1.0 and 1.5, respectively. This version
+# 			operates on the zip export file itself.
+# 			
+# 		* Supports reading configuration options from a ".fbk" directory (within the user's home directory. Future 
+# 			versions may allow a command-line option for specifying an arbitrary location for this directory. 
+# 			Command-line options will supercede any files within this directory. 
+# 				* Within this config directory, a "config_filter.json" file will automatically be used if it exists. 
+# 				* If a style.css file exists, it will be copied into the output directory (otherwise the one within the
+# 					zip file will be used).
+#
+# 		* Cleaned up the argument lists for non-modified variables within helper processing functions.
+#
 #
 # 		NOTE: BeautifulSoup and argparse may or may not be included with your Python distribution. This program 
 # 					relies on both, and will not run without them.
 
 from BeautifulSoup import BeautifulSoup
+import zipfile
 from zipfile import ZipFile
 from datetime import datetime
 import sys
@@ -102,7 +115,18 @@ def write_outfile( contents, outfilepath, filename ):
 	outfile.write( contents )
 	outfile.close()
 
-def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map ):
+
+def zipfile_copy( zipfile, src_path, dest_path ):
+	file_src = zipfile.open( src_path )
+	file_target = file(dest_path, 'wb')
+
+	shutil.copyfileobj( file_src, file_target )
+
+	file_src.close()
+	file_target.close()
+
+
+def process_wall( zip_infile, outfilepath, time_filter ):
 
 	# Add the timestamp-based wall filter options if specified (using -t or --timefile-filter)
 	if(args.timefile_filter):
@@ -116,13 +140,7 @@ def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map
 		'http://photos-c.ak.fbcdn.net/photos-ak-snc1/v43/97/32061240133/app_2_32061240133_2659.gif' : 'youtube.gif',
 	}
 
-	infile = os.path.join(infilepath,'wall.html')
-
-	if( not os.path.isfile(infile)):
-		print "The input file specified, %s, does not exist." % (infile)
-		sys.exit(1)
-
-	f = open(infile, 'r')
+	f = zip_infile.open('%s/html/wall.html' % (basedirname), 'r')
 	soup = BeautifulSoup( f.read() )
 	f.close()
 
@@ -130,20 +148,20 @@ def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map
 
 	# Do work
 
-	# If "../images/icons" exists, assume that the user has or will download the necessary icon files from facebook,
-	# otherwise, just leave the facebook.com links in
-	if os.path.exists(os.path.join(infilepath,'..','images', 'icons')):
+	# If "[config_dir]/images/icons" exists, assume that the user has or will download the necessary icon files from 
+	#	facebook, otherwise, just leave the facebook.com links in
+	if ( use_configdir and os.path.exists(os.path.join(config_dir,'images', 'icons')) ):
 
 		icon_src_regex = re.compile('^http://www.facebook.com/images/icons/')
 
 		# Root facebook.com icon image sources to the local filesystem (stop giving facebook.com traffic to analyze)
-		for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['icon']}, src=icon_src_regex):
+		for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['profile']['icon']}, src=icon_src_regex):
 			icon_image['src'] = re.sub(r'http://www.facebook.com/', '../', icon_image['src']); 
 			
 
 		# A future version will check that the corresponding files exist, and will download them if not
 		for logo_img in icon_map:
-			for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['icon']}, src=logo_img):
+			for icon_image in soup.findAll('img', attrs={'class': attr_classname_map['profile']['icon']}, src=logo_img):
 				icon_image['src'] = re.sub(re.compile(logo_img), '../images/icons/' + icon_map[logo_img], icon_image['src'])
 
 
@@ -158,30 +176,30 @@ def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map
 
 
 	# Extract all 'class="profile"' tags
-	class_profile = soup.findAll(attrs={'class': attr_classname_map['profile']})
+	class_profile = soup.findAll(attrs={'class': attr_classname_map['profile']['profile']})
 
 	# Remove all posts by anyone who is not the profile author
 	for spantag in class_profile:
-		if spantag.string != profile_name and None == spantag.findParent(attrs={'class' : attr_classname_map['comments']}):
-			spantag.findParent(attrs={'class':attr_classname_map['feedentry']}).extract()
+		if spantag.string != profile_name and None == spantag.findParent(attrs={'class' : attr_classname_map['profile']['comments']}):
+			spantag.findParent(attrs={'class':attr_classname_map['profile']['feedentry']}).extract()
 
 	# Remove all comments
-	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
+	comments = soup.findAll(attrs={'class': attr_classname_map['profile']['comments']})
 	[comment.extract() for comment in comments]
 
 
 	# Remove the explicit time entries, as specified above
 	for timestr in time_filter:
-		time_entry = soup.find(attrs={'class': attr_classname_map['timerow']}, text=timestr)
+		time_entry = soup.find(attrs={'class': attr_classname_map['profile']['timerow']}, text=timestr)
 		if( None == time_entry ):
 			print "No entry found for time: %s" % (timestr)
 		else:
-			time_entry.findParent(attrs={'class': attr_classname_map['feedentry']}).extract()
+			time_entry.findParent(attrs={'class': attr_classname_map['profile']['feedentry']}).extract()
 
 
 	# Remove "walllink" class posts (TEMPORARY, until a better solution can be found without exposing private data)
-	wall_links = soup.findAll(attrs={'class': attr_classname_map['walllink']})
-	[wall_link.findParent(attrs={'class': attr_classname_map['feedentry']}).extract() for wall_link in wall_links]
+	wall_links = soup.findAll(attrs={'class': attr_classname_map['profile']['walllink']})
+	[wall_link.findParent(attrs={'class': attr_classname_map['profile']['feedentry']}).extract() for wall_link in wall_links]
 
 
 	### REMOVE PRIVATE POSTS ###
@@ -199,34 +217,28 @@ def process_wall( args, infilepath, outfilepath, time_filter, attr_classname_map
 	for privacy_specifier, regex in privacy_opt_regex_map.iteritems():
 		if privacy_specifier in args.privacy:
 
-			img_privacy = soup.findAll('img', attrs={'class': attr_classname_map['privacy']}, title=re.compile(regex))
+			img_privacy = soup.findAll('img', attrs={'class': attr_classname_map['profile']['privacy']}, title=re.compile(regex))
 			privacy_exceptions.extend( img_privacy )
 
 
-	[privacy_exception.findParent(attrs={'class': attr_classname_map['feedentry']}).extract() for privacy_exception in privacy_exceptions]
+	[privacy_exception.findParent(attrs={'class': attr_classname_map['profile']['feedentry']}).extract() for privacy_exception in privacy_exceptions]
 
 
 	# Remove the privacy icons
-	privacy_indicators = soup.findAll('img', attrs={'class': attr_classname_map['privacy']})
+	privacy_indicators = soup.findAll('img', attrs={'class': attr_classname_map['profile']['privacy']})
 	[privacy_indicator.extract() for privacy_indicator in privacy_indicators]
 
 
 	# Strip out the download notice
-	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['profile']['downloadnotice']}).contents = ""
 
 	# Write out the filtered wall page
 	write_outfile(soup.prettify(), outfilepath, 'wall.html')
 
 
-def process_photos( args, infilepath, outfilepath, album_filter, attr_classname_map ):
+def process_photos( zip_infile, outfilepath, album_filter ):
 
-	infile = os.path.join(infilepath,'photos.html')
-
-	if( not os.path.isfile(infile)):
-		print "The input file specified, %s, does not exist." % (infile)
-		sys.exit(1)
-
-	f = open(infile, 'r')
+	f = zip_infile.open('%s/html/photos.html' % (basedirname), 'r')
 	soup = BeautifulSoup( f.read() )
 	f.close()
 
@@ -249,32 +261,32 @@ def process_photos( args, infilepath, outfilepath, album_filter, attr_classname_
 	# END ADDITION
 
 	# Remove all comments
-	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
+	comments = soup.findAll(attrs={'class': attr_classname_map['photos']['comments']})
 	[comment.extract() for comment in comments]
 
 
  	# Remove explicit albums, as specified in album_filter
 	for albumstr in album_filter:
-		soup.find('a', text=albumstr).findParent('div', attrs={'class': attr_classname_map['album']}).extract()
+		soup.find('a', text=albumstr).findParent('div', attrs={'class': attr_classname_map['photos']['album']}).extract()
 
 	# Go over the remaining album pages and handle them as well
-	for album_struct in soup.findAll('div', attrs={'class': attr_classname_map['album']}):
+	for album_struct in soup.findAll('div', attrs={'class': attr_classname_map['photos']['album']}):
 		album_filename = urllib.url2pathname(album_struct.find('a')['href'])
 		
-		f = open(os.path.join(infilepath, album_filename), 'r')
+		f = open(os.path.join('%s/html/' % (basedirname), album_filename), 'r')
 		album_soup = BeautifulSoup( f.read() )
 		f.close()
 
-		process_album( album_soup, args, outfilepath, album_filename, attr_classname_map )
+		process_album( album_soup, outfilepath, album_filename )
 
 	# Strip out the download notice
-	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['photos']['downloadnotice']}).contents = ""
 
 	# Write out the filtered photos page
 	write_outfile(soup.prettify(), outfilepath, 'photos.html')
 
 
-def process_album( soup, args, outfilepath, album_filename, attr_classname_map ):
+def process_album( soup, outfilepath, album_filename ):
 	# Remove the tab links from album pages
 	extract_tab_links(soup, args.pages, args.suppress_links)
 
@@ -288,11 +300,11 @@ def process_album( soup, args, outfilepath, album_filename, attr_classname_map )
 		del(fbk_link['href'])
 
 	# Remove all comments from album pages
-	comments = soup.findAll(attrs={'class': attr_classname_map['comments']})
+	comments = soup.findAll(attrs={'class': attr_classname_map['photos']['comments']})
 	[comment.extract() for comment in comments]
 
 	# Strip out the download notice
-	soup.find(attrs={'class': attr_classname_map['downloadnotice']}).contents = ""
+	soup.find(attrs={'class': attr_classname_map['photos']['downloadnotice']}).contents = ""
 
 	write_outfile( soup.prettify(), outfilepath, album_filename )
 
@@ -322,10 +334,12 @@ if __name__ == "__main__":
 
 	parser.add_argument('--version', action='version', version='%(prog)s 1.5')
 
-	parser.add_argument('infile')
+	parser.add_argument('infile', help='The export zip file to process.')
 
 	args = parser.parse_args()
 
+	config_dir = os.path.join( os.path.expanduser('~'), '.fbk' )
+	use_configdir = os.path.exists( config_dir )
 
 	valid_pages = ['profile', 'wall', 'photos', 'friends', 'notes', 'events', 'messages']
 	pages = args.pages.split(',')
@@ -336,8 +350,14 @@ if __name__ == "__main__":
 		"albums" 		 : []
 	}
 
+	
+	file_configfile_filter = None
 	if(args.filter_configfile):
 		file_configfile_filter = os.path.abspath(args.filter_configfile)
+	elif( use_configdir and os.path.exists(os.path.join(config_dir, 'config_filter.json'))):
+		file_configfile_filter = os.path.join(config_dir, 'config_filter.json')
+
+	if(file_configfile_filter):
 
 		if( not os.path.isfile(file_configfile_filter)):
 			print "The specified config filter file, %s, does not exist." % (args.filter_configfile)
@@ -369,19 +389,32 @@ if __name__ == "__main__":
 		print "The input file specified, %s, does not exist." % (args.infile)
 		sys.exit(1)
 
+	if( not zipfile.is_zipfile(infile) ):
+		print "The input file specified, %s, is not a valid zip file." % (args.infile)
+		sys.exit(1)
+
+	# Open the zip file for reading, and figure out the base filename
 	file_path = os.path.abspath(args.infile)
+	zip_infile = zipfile.ZipFile( file_path, 'r' )
+	basedirname = zip_infile.namelist()[0].split('/')[0]
 
-	if os.path.isfile(file_path):
-		file_path = os.path.dirname(file_path)
-
+	# Create the base filename (if it doesn't exist)
+	if( not os.path.exists(os.path.join(os.path.dirname(file_path), basedirname)) ):
+		if( not os.path.exists(os.path.join(os.path.dirname(file_path), basedirname)) ):
+			os.mkdir( os.path.join(os.path.dirname(file_path), basedirname) )
+		
+	# Set up the date-stampped html directory
 	str_outfile_dt = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
-	outfile_path = os.path.join(os.path.dirname(file_path), os.path.basename(file_path) + "-" + str_outfile_dt)
+	outfile_path = os.path.join(os.path.dirname(file_path), basedirname, "html-" + str_outfile_dt)
 	os.mkdir( outfile_path )
 
 	# Copy 'style.css' to the target directory
-	shutil.copy( os.path.join(file_path, 'style.css'), outfile_path)
+	if( use_configdir and os.path.isfile(os.path.join(config_dir, 'style.css')) ):
+		shutil.copy( os.path.join(config_dir, 'style.css'), outfile_path)
+	else:
+		zipfile_copy( zip_infile, '%s/html/style.css' % (basedirname), os.path.join(outfile_path, 'style.css') )
 
-	
+
 	attr_classname_map = {
 		'profile' : {
 			'album' 					: 'album',
@@ -401,9 +434,12 @@ if __name__ == "__main__":
 		},
 	}
 
+
 	if "wall" in pages:
-		process_wall(args, file_path, outfile_path, obj_config['timefilter'], attr_classname_map['profile'])
+		process_wall(zip_infile, outfile_path, obj_config['timefilter'])
 	if "photos" in pages:
-		process_photos(args, file_path, outfile_path, obj_config['albums'], attr_classname_map['profile'])
+		process_photos(zip_infile, outfile_path, obj_config['albums'] )
+
+	zip_infile.close()
 
 	sys.exit(0)
