@@ -62,6 +62,14 @@
 #
 # 		* Cleaned up the argument lists for non-modified variables within helper processing functions.
 #
+# 		Version 2.1 [March 24th, 2012]
+#			* Facebook made some changes such that posts (not just on your own wall) will appear on the wall in the 
+# 			export format. I may add a future configuration option to keep these posts, but I made a minor change to 
+# 			intentionally strip them out, as it is confusing to see posts on other people's walls appear on your own.
+#
+# 		* I fixed a bug with outputting the photo pages; I was erroneously attempting to read from an incorrect 
+# 			source location, which produced errors.
+#
 #
 # 		NOTE: BeautifulSoup and argparse may or may not be included with your Python distribution. This program 
 # 					relies on both, and will not run without them.
@@ -224,9 +232,17 @@ def process_wall( zip_infile, outfilepath, time_filter ):
 	[privacy_exception.findParent(attrs={'class': attr_classname_map['profile']['feedentry']}).extract() for privacy_exception in privacy_exceptions]
 
 
-	# Remove the privacy icons
-	privacy_indicators = soup.findAll('img', attrs={'class': attr_classname_map['profile']['privacy']})
-	[privacy_indicator.extract() for privacy_indicator in privacy_indicators]
+	# Remove all posts without a privacy specifier (because these are more than likely posts on others' walls)
+	timerows = soup.findAll('div', attrs={'class': attr_classname_map['profile']['timerow']})
+
+	for row in timerows:
+		img_privacy = row.find('img', attrs={'class': attr_classname_map['profile']['privacy']})
+
+		# If there is no privacy specifier, delete the post
+		if img_privacy == None:
+			row.findParent('div').extract()
+		else: # Remove the privacy icon
+			img_privacy.extract()
 
 
 	# Strip out the download notice
@@ -273,7 +289,7 @@ def process_photos( zip_infile, outfilepath, album_filter ):
 	for album_struct in soup.findAll('div', attrs={'class': attr_classname_map['photos']['album']}):
 		album_filename = urllib.url2pathname(album_struct.find('a')['href'])
 		
-		f = open(os.path.join('%s/html/' % (basedirname), album_filename), 'r')
+		f = zip_infile.open(os.path.join('%s/html/' % (basedirname), album_filename), 'r')
 		album_soup = BeautifulSoup( f.read() )
 		f.close()
 
