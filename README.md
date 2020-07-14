@@ -4,9 +4,10 @@ README
 Tim Wright
 ----------
 
-* 2011.08.05 T.Wright - Added description for fbk_sanitize python script
-* 2009.12.29 T.Wright - Updated *rc files; included my recent syn script
-* 2009.10.14 T.Wright - Added bin subdirectory and some helpful scripts; updated *rc files
+* 2020.07.14 T.Wright - Update gvimrc, ~/.ssh/config, add `update_nvidia` driver script
+* 2011.08.05 T.Wright - Added description for fbk\_sanitize python script
+* 2009.12.29 T.Wright - Updated \*rc files; included my recent syn script
+* 2009.10.14 T.Wright - Added bin subdirectory and some helpful scripts; updated \*rc files
 
 Included :
 ----------

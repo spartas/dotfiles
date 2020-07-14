@@ -1,4 +1,3 @@
-
 colorscheme inkpot
 set shell=/bin/zsh
 
@@ -27,3 +26,8 @@ set guioptions+=aT
 if has("toolbar")
 	aunmenu ToolBar.Print
 endif
+
+" Make shift-insert work as it does in gnome-terminal
+map <S-Insert> <MiddleMouse>
+map! <S-Insert> <MiddleMouse>
+
